@@ -1,0 +1,30 @@
+{
+    "name": "g3n1us/model_api",
+    "type": "package",
+    "authors": [
+        {
+            "name": "Sean Bethel",
+            "email": "sean@americanmadeweb.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "G3n1us\\ModelApi\\": "src/"
+        },	    
+		"files": [
+			"src/helpers.php"
+		] 
+    },  
+    "extra": {
+        "laravel": {
+            "providers": [
+                "G3n1us\\ModelApi\\ServiceProvider"
+            ],
+            "aliases": {
+                "Editor": "G3n1us\\ModelApi\\ServiceProvider"
+            }
+        }
+    },      
+    "minimum-stability": "dev",
+    "require": {}
+}
