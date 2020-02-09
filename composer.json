@@ -17,10 +17,7 @@
     "autoload": {
         "psr-4": {
             "G3n1us\\ModelApi\\": "src/"
-        },
-		"files": [
-			"src/helpers.php"
-		]
+        }
     },
     "extra": {
         "laravel": {
