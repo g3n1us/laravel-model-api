@@ -8,7 +8,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'Laravel Model API') }}</title>
 
     <!-- Styles -->
     <link href="/assets/fontawesome-free-5.0.2/web-fonts-with-css/css/fontawesome-all.min.css" rel="stylesheet">
@@ -61,6 +61,7 @@
 		<code>template </code>: specify the template for each model to be output as, see <code>html</code> parameter<br>
 		<code>paginated</code>: whether or not to use paging<br>
 		<code>pluck    </code>: specify a single property to output for each model<br>
+		<code>where    </code>: query the model eg. <code>?where[]=name&where[]=!=&where[]=Alf</code><br>
             </p>
             <p><b>Output defaults to JSON</b></p>
 
