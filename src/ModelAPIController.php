@@ -73,7 +73,7 @@ class ModelAPIController extends BaseController{
 		$this->per_page = $request->input('per_page');
 		$this->template = $request->input('template');
 		$this->paginated = $request->input('paginate', true);
-		$this->pluck = $request->input('pluck', $request->input('property'));
+		$this->pluck = $request->input('pluck', $request->input('property', $this->parameters['property']));
 		$this->where = $this->resolveWhere();
 
     }
