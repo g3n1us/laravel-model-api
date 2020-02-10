@@ -55,6 +55,7 @@ class ModelAPIController extends BaseController{
 
     public function __construct(Request $request){
 	    $route = $request->route();
+	    if(!$route) return;
 	    foreach($route->parameters() as $p => $v){
 		    $this->parameters[$p] = $v;
 	    }
