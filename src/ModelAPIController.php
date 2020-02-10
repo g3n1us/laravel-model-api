@@ -44,7 +44,6 @@ class ModelAPIController extends BaseController{
 
     protected $model;
     protected $connection;
-    protected $query_builder;
     protected $eloquent_builder;
 
 	public $parameters = [
@@ -61,11 +60,7 @@ class ModelAPIController extends BaseController{
 	    }
 
 		$this->model = $this->resolveModelName($this->parameters['modelname']);
-	    $this->connection = (new $this->model)->getConnection();
-	    $this->query_builder = new QueryBuilder($this->connection);
-	    $this->eloquent_builder = new EloquentBuilder($this->query_builder);
-		$this->eloquent_builder->setModel(new $this->model);
-
+		$this->eloquent_builder = $this->model::query();
 		$this->is_plural = self::is_plural($this->parameters['modelname']) || $this->parameters['id'] === '-';
 		$this->html = $request->input('html', false);
 		$this->offset = $request->input('offset', 0);
