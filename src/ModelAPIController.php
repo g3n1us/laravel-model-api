@@ -123,7 +123,7 @@ class ModelAPIController extends BaseController{
 	    if($id){
 			$m = $this->eloquent_builder->findOrFail($id);
 			if($this->html && method_exists($m, 'display')) return $m->display($this->template);
-			return $this->property ? $m->{$this->property} : $m;
+			return $this->pluck ? $m->{$this->pluck} : $m;
 	    }
 
 		else{
