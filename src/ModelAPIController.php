@@ -45,6 +45,10 @@ class ModelAPIController extends BaseController{
     protected $model;
     protected $connection;
     protected $eloquent_builder;
+    
+    // ordering
+    protected $order_by;
+    protected $order_direction;
 
 	public $parameters = [
 		'modelname' => null,
@@ -70,7 +74,11 @@ class ModelAPIController extends BaseController{
 		$this->paginated = $request->input('paginate', true);
 		$this->pluck = $request->input('pluck', $request->input('property', $this->parameters['property']));
 		$this->where = $this->resolveWhere();
-
+		// ordering
+		if($request->has('sort_by') || $request->has('order_by')){
+			$this->order_by = $request->input('sort_by') ?? $request->input('order_by');
+			$this->order_direction = $request->input('order_direction', 'asc');
+		}
     }
 
 
@@ -90,6 +98,15 @@ class ModelAPIController extends BaseController{
 
 	private function returnMany(){
 		$this->resolveWhere();
+		
+		if($this->order_by){
+			if($this->order_direction == 'asc'){
+				$this->eloquent_builder->orderBy($this->order_by);
+			}
+			else{
+				$this->eloquent_builder->orderByDesc($this->order_by);
+			}
+		}
 
 		if($this->paginated || $this->per_page){
 			$results =  $this->eloquent_builder->paginate($this->per_page);
