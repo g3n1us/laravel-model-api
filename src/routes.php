@@ -12,8 +12,10 @@ use Illuminate\Http\Request;
   //	pluck/property - pluck a value from the returned objects
   //	$_GET parameters for singular form only:
   //	html - returns the model's overloaded __toString method instead of the default JSON representation, also an URL parameter
+  
+$uri_prefix = config('g3n1us_model_api.uri_prefix', 'api');  
 
-Route::get('api', function(){
+Route::get($uri_prefix, function(){
     $routes = collect(\Route::getRoutes()->getIterator())->map(function($v,$k){
 		$item = [];
 		$item['methods'] = implode('|', $v->methods());
@@ -25,4 +27,11 @@ Route::get('api', function(){
     return view('g3n1us_model_api::index', ['routes' => $routes]);
 });
 
-Route::get('api/{modelname}/{id?}/{property?}', 'G3n1us\\ModelApi\\ModelAPIController@route');
+$public_models = config('g3n1us_model_api.public_models', []);
+$model_regex = collect($public_models)->map(function($c){
+	$name = str_slug(snake_case(class_basename($c)));
+	return [str_plural($name), $name];
+})->flatten()->implode('|');
+
+
+Route::get($uri_prefix . '/{modelname}/{id?}/{property?}', 'G3n1us\\ModelApi\\ModelAPIController@route')->where('modelname', $model_regex);
