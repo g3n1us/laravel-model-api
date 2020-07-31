@@ -14,6 +14,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 
 use Str;
+use Arr;
 
 
 // Usage: modelname is the snake cased version of the model. If singular, will display either the first model or the one specified by id.
@@ -32,23 +33,23 @@ use Str;
 
 class ModelAPIController extends BaseController{
 
-    protected $is_plural;
-    protected $html;
-    protected $offset;
-    protected $limit;
-    protected $per_page;
-    protected $template;
-    protected $paginated;
-    protected $pluck;
-    protected $where;
+    public $is_plural;
+    public $html;
+    public $offset;
+    public $limit;
+    public $per_page;
+    public $template;
+    public $paginated;
+    public $pluck;
+    public $where;
+    protected $with;
+    public $model;
+    public $connection;
+    public $eloquent_builder;
 
-    protected $model;
-    protected $connection;
-    protected $eloquent_builder;
-    
     // ordering
-    protected $order_by;
-    protected $order_direction;
+    public $order_by;
+    public $order_direction;
 
 	public $parameters = [
 		'modelname' => null,
@@ -56,12 +57,21 @@ class ModelAPIController extends BaseController{
 		'property' => false,
 	];
 
-    public function __construct(Request $request){
-	    $route = $request->route();
-	    if(!$route) return;
-	    foreach($route->parameters() as $p => $v){
-		    $this->parameters[$p] = $v;
-	    }
+	private $booted = false;
+
+    public function __construct(Request $request = null){
+        //
+    }
+
+
+    public function boot($modelname, $id = null, $property = false){
+
+	    $request = request();
+
+        $this->parameters['modelname'] = $modelname;
+        $this->parameters['id'] = $id;
+        $this->parameters['property'] = $property;
+
 
 		$this->model = $this->resolveModelName($this->parameters['modelname']);
 		$this->eloquent_builder = $this->model::query();
@@ -74,39 +84,42 @@ class ModelAPIController extends BaseController{
 		$this->paginated = $request->input('paginate', true);
 		$this->pluck = $request->input('pluck', $request->input('property', $this->parameters['property']));
 		$this->where = $this->resolveWhere();
+		$this->with = $this->resolveWith();
 		// ordering
 		if($request->has('sort_by') || $request->has('order_by')){
 			$this->order_by = $request->input('sort_by') ?? $request->input('order_by');
 			$this->order_direction = $request->input('order_direction', 'asc');
 		}
+
+		$this->booted = true;
     }
 
 
-// $modelname, $id = null, $property = false
-    public function route(){
-	    $request = request();
 
-		if(!$this->is_plural){
-			$response = $this->returnSingle();
-		}
-		else{
-			$response = $this->returnMany();
-		}
+    public function route($modelname, $id = null, $property = null){
+        $this->boot($modelname, $id, $property);
+
+        $response = $this->resolve_output();
+
         return response($response)->header('Access-Control-Allow-Origin', '*');
     }
 
 
+
+    public function resolve_output(){
+		if(!$this->is_plural){
+			return $this->returnSingle();
+		}
+		else{
+			return $this->returnMany();
+		}
+    }
+
+
+
 	private function returnMany(){
 		$this->resolveWhere();
-		
-		if($this->order_by){
-			if($this->order_direction == 'asc'){
-				$this->eloquent_builder->orderBy($this->order_by);
-			}
-			else{
-				$this->eloquent_builder->orderByDesc($this->order_by);
-			}
-		}
+
 
 		if($this->paginated || $this->per_page){
 			$results =  $this->eloquent_builder->paginate($this->per_page);
@@ -126,8 +139,9 @@ class ModelAPIController extends BaseController{
 			return implode("\n", $return);
 		}
 
-		return $this->pluck ? $results->pluck($pluck) : $results;
+		return $this->pluck ? $results->pluck($this->pluck) : $results;
 	}
+
 
 
     private function returnSingle(){
@@ -147,6 +161,7 @@ class ModelAPIController extends BaseController{
     }
 
 
+
 	private function resolveModelName($modelname){
 		$public_models = config('g3n1us_model_api.public_models', []);
 
@@ -162,7 +177,8 @@ class ModelAPIController extends BaseController{
 
 		$classname = $ns . $modelbasename;
 
-		abort_if(!auth()->check() && !in_array($classname, $public_models), 401, 'Unauthorized');
+		abort_if(!in_array($classname, $public_models), 401, 'Unauthorized');
+// 		abort_if(!auth()->check() && !in_array($classname, $public_models), 401, 'Unauthorized');
 
 		return $classname;
 	}
@@ -209,13 +225,14 @@ class ModelAPIController extends BaseController{
 	}
 
 
-	private function resolveWhere(){
+	public function resolveWhere(){
+        $this->resolveOrder();
+        $this->resolveWith();
+
 		if($where = $this->isWhere());
-		else return;
+		else return $this->eloquent_builder;
 
 		[ 'method_name' => $method_name, 'query' => $query ] = $where;
-
-// 		$operators = $this->query_builder->operators;
 
 		if(is_string($query)){
 			// is it an "in"
@@ -234,8 +251,81 @@ class ModelAPIController extends BaseController{
 
 		call_user_func_array([$this->eloquent_builder, $method_name], $matches);
 
+
 		return $this->eloquent_builder;
 	}
+
+
+
+    protected function resolveOrder(){
+
+		if($this->order_by){
+
+    		if( method_exists($this->model, 'static_outline') ){
+        		// sort and pluck from relations is only available is used within LaravelReactSync
+
+        		$outline = $this->model::static_outline();
+        		$q = [];
+        		Arr::set($q, $this->order_by, true);
+        		$base_order_prop = key($q);
+        		$has_subprop = $base_order_prop != $this->order_by;
+        		$subprop = 'id';
+        		if($has_subprop) $subprop = key(head($q));
+
+        		$properties = $outline->get($base_order_prop, []);
+        		@['type' => $type, 'relation_type' => $relation_type, 'definition' => $definition] = $properties;
+        		if($type == 'relation'){
+            		$rel = (new $this->model)->$base_order_prop();
+            		$parent = $rel->getParent();
+            		$related = $rel->getRelated();
+
+            		$left = $rel->getQualifiedForeignKeyName();
+            		$right = $rel->getQualifiedOwnerKeyName();
+
+                    $this_table = $parent->getTable();
+            		$other_table = $related->getTable();
+
+
+            		$qualified_order_clause = "$other_table.$subprop";
+
+            		$this->eloquent_builder->join($other_table, $left, '=', $right)
+            		                       ->orderBy($qualified_order_clause, $this->order_direction)
+            		                       ->select("$this_table.*");
+
+//             		$users = User::join('roles', 'users.role_id', '=', 'roles.id')->orderBy('roles.label', $order)->select('users.*')->paginate(10);
+        		}
+        		else{
+            		$this->eloquent_builder->orderBy($this->order_by, $this->order_direction);
+        		}
+
+    		}
+    		else{
+        		$this->eloquent_builder->orderBy($this->order_by, $this->order_direction);
+    		}
+		}
+
+    }
+
+
+    private function get_arg($arg){
+        $out = (array) request()->input($arg, $this->{$arg});
+        $out = array_map(function($v){
+            return array_map('trim', explode(',', $v));
+        }, $out);
+        $out = Arr::flatten($out);
+        return $out;
+    }
+
+
+    public function resolveWith(){
+        $with = $this->get_arg('with');
+
+        if(!empty($with)){
+            call_user_func_array([$this->eloquent_builder, 'with'], $with);
+        }
+
+        return $this->eloquent_builder;
+    }
 
 
 
@@ -244,6 +334,18 @@ class ModelAPIController extends BaseController{
 		return Str::plural($string) == $string;
 	}
 
+    public function __set($name, $value){
+        if($this->booted){
+            $handlers = [
+                'with' => 'resolveWith',
+            ];
+            if($handler = $handlers[$name]){
+                $this->{$name} = $value;
+                $this->{$handler}();
+            }
 
+//             dd($name, $handlers[$name], $value);
+        }
+    }
 
 }

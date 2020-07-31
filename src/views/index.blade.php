@@ -62,6 +62,8 @@
 		<code>paginated</code>: whether or not to use paging<br>
 		<code>pluck    </code>: specify a single property to output for each model<br>
 		<code>where    </code>: query the model eg. <code>?where[]=name&where[]=!=&where[]=Alf</code><br>
+		<code>order_by    </code>: the column to sort results by<br>
+		<code>order_direction    </code>: the sort direction either <code>asc</code> or <code>desc</code>, defaults to <code>asc</code><br>
             </p>
             <p><b>Output defaults to JSON</b></p>
 
