@@ -4,31 +4,54 @@ namespace G3n1us\ModelApi;
 
 class Data{
 
-    public static function fetch($modelname, $id = null, $property = false){
 
-        $controller = new ModelAPIController;
+    public function __construct(){
+// 		resolve(AccessRest::class);
+		$this->service = resolve(ApiService::class);
 
-        if(is_array($id)){
-            $props = $id;
-            $id = null;
-        }
-        $controller->boot($modelname, $id, $property);
-
-        foreach($props as $prop => $value){
-            $controller->{$prop} = $value;
-        }
-
-//         dd($controller);
-
-        return $controller->resolve_output();
     }
 
-    public static function get_query($modelname, $id = null, $property = false){
-        $controller = new ModelAPIController;
 
-        $controller->boot($modelname, $id, $property);
+    protected function fetch(){
+		return $this->service->get();
 
-        return $controller->resolveWhere();
+    }
+
+    protected function get_query(){
+
+        return $this->service->eloquent_builder;
+    }
+
+    private static function define_args($args){
+
+        $last = head(array_slice($args, -1));
+
+        $config = [];
+        if(is_array($last)){
+	        $config = array_pop($args);
+        }
+        [$modelname, $id, $property] = $args + [null, null, false];
+        return [[$modelname, $id, $property], $config];
+    }
+
+
+    public static function __callStatic($name, $args){
+        [$parameters, $config] = static::define_args($args);
+
+	    $instance = new static;
+
+		[$modelname, $id, $property] = $parameters;
+
+        $instance->service->parameters['modelname'] = $modelname;
+        $instance->service->parameters['id'] = $id;
+        $instance->service->parameters['property'] = $property;
+
+		$instance->service->boot();
+		foreach($config as $c => $v){
+			$instance->service->{$c} = $v;
+		}
+
+		return $instance->{$name}();
     }
 
 }
