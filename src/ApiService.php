@@ -185,6 +185,7 @@ class ApiService{
 
     public function get(){
 	    $this->resolve();
+
 		if(!$this->is_plural){
 			return $this->returnSingle();
 		}
@@ -193,9 +194,16 @@ class ApiService{
 		}
     }
 
+    public function toArray(){
+//         dd($this->get());
+        return $this->get();
+    }
+
+/*
 	public function __toString(){
-		return $this->get()->toJSON();
+		return ($this->get() ?? collect([]))->toJSON();
 	}
+*/
 
 	private function returnMany(){
 

@@ -46,9 +46,14 @@ trait ApiTrait{
             $classmap[$k] = str_replace($k, '', $v);
 
 		$modelbasename = Str::studly(strtolower(Str::singular($modelname)));
+		$modelbasename_plural = Str::studly(strtolower(Str::plural($modelname)));
 		$ns = isset($classmap[$modelbasename]) ? $classmap[$modelbasename] : "App\\";
-
 		$classname = $ns . $modelbasename;
+
+
+        if(!in_array($classname, $public_models)){
+            $classname = (isset($classmap[$modelbasename_plural]) ? $classmap[$modelbasename_plural] : "App\\") . $modelbasename_plural;;
+        }
 
 		abort_if(!in_array($classname, $public_models), 401, 'Unauthorized');
 

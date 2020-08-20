@@ -34,24 +34,23 @@
       <div class="container">
         <div class="row justify-content-center">
         	<div class="col-md-8">
-          	@php
-          	$public_models = array_map(function($v){
-            	return '<code><a href="/api/'.snake_case(str_plural(class_basename($v))).'">'.snake_case(class_basename($v)).'</a></code>';
-          	}, config('g3n1us_model_api.public_models', []));
-          	@endphp
         		<h1 class="mt-5">Welcome</h1>
         		<p>The available endpoints are listed below.</p>
-        		<p><b>Primary endpoint:</b> <code>/api/{modelname}/{id?}/{property?}</code></p>
+        		<p><b>Primary endpoint:</b> <code>/{{$prefix}}/{modelname}/{id?}/{property?}</code></p>
         		<h6>Documentation for Primary Endpoint</h6>
         		<p>
-          		<code>modelname</code> can be one of: {!! implode(', ', $public_models) !!}. To return a paged set of results, use the plural form of the noun, otherwise the first result will be returned.
-          		eg. <a href="/api/country" target="_blank"><code>/api/country</code></a> or
-          		eg. <a href="/api/countries" target="_blank"><code>/api/countries</code></a>
+          		<code>modelname</code> can be one of:
+          		@foreach($route_names as [$url, $string])
+                  		<code><a href="{{$url}}">{{$string}}</a></code>@if (!$loop->last), @endif
+          		@endforeach
+          		. To return a paged set of results, use the plural form of the noun, otherwise the first result will be returned.
+          		eg. <a href="{{$eg_url}}" target="_blank"><code>{{$eg_url}}</code></a> or
+          		eg. <a href="$eg_url_plural" target="_blank"><code>{{$eg_url_plural}}</code></a>
         		</p>
             <p><code>id</code> <small>(optional)</small> will return the specified model by it's id.
-          		eg. <a href="/api/country/5" target="_blank"><code>/api/country/5</code></a>
+          		eg. <a href="{{$eg_url}}/5" target="_blank"><code>{{$eg_url}}/5</code></a>
             </p>
-            <p><code>property</code> <small>(optional)</small> will return the specified property of the model. This can be either a static property or a related resource, eg. <a href="/api/country/5/states" target="_blank"><code>/api/country/5/states</code></a> will return the sequences associated with project #5. You can also use this approach with collections by specifying a dash (-) for the id, eg. <a href="/api/countries/-/states" target="_blank"><code>/api/countries/-/states</code></a>. This will return a collection of the resources associated with each of the original items in the collection.</p>
+            <p><code>property</code> <small>(optional)</small> will return the specified property of the model. This can be either a static property or a related resource, eg. <a href="{{$eg_url}}/5/states" target="_blank"><code>{{$eg_url}}/5/property-name</code></a> will return the items associated with id #5. You can also use this approach with collections by specifying a dash (-) for the id, eg. <a href="{{$eg_url_plural}}/-/property-name" target="_blank"><code>{{$eg_url_plural}}/-/property-name</code></a>. This will return a collection of the resources associated with each of the original items in the collection.</p>
             <p>
               <b>Available options via query string:</b><br>
 		<code>html     </code>: returns an html representation of each model if available<br>
@@ -70,10 +69,15 @@
         		<h6>All Available Endpoints</h6>
 
         		<table class="table table-bordered" style="font-family: monospace">
+            		<thead>
+		        		<tr><th>Methods</th><th>Path</th><th>Name</th></tr>
+            		</thead>
+            		<tbody>
         		@foreach($routes as $route)
-        		<tr><td>{{$route['methods']}}</td><td>{{str_start($route['uri'], '/')}}</td></tr>
+        		<tr><td>{{$route['methods']}}</td><td>{{str_start($route['uri'], '/')}}</td><td>{{$route['name']}}</td></tr>
 
         		@endforeach
+            		</tbody>
         		</table>
         	</div>
         </div>

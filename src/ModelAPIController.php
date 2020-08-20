@@ -14,6 +14,7 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 
 use Str;
 use Arr;
+use Route;
 
 
 // Usage: modelname is the snake cased version of the model. If singular, will display either the first model or the one specified by id.
@@ -31,23 +32,51 @@ use Arr;
 
 
 class ModelAPIController extends BaseController{
-	
+
+	public $service;
+
+	public $modelname;
+
+	public $model;
+
+
     public function __construct(ApiService $service){
 		$this->service = $service;
-
+		$this->modelname = basename(Route::current()->getPrefix());
+        $this->service->parameters['modelname'] = $this->modelname;
+        $this->model = $this->findModel();
     }
 
 
-    public function route($modelname, $id = null, $property = null){
-        $this->service->parameters['modelname'] = $modelname;
+    private function findModel(){
+        $model = collect(config('g3n1us_model_api.public_models', []))->first(function($m){
+            return preg_match('/'.$m::rest_regex().'/', $this->modelname);
+        });
+        return $model;
+    }
+
+
+    public function route($id = null, $property = null){
+        $this->findModel();
         $this->service->parameters['id'] = $id;
+
         $this->service->parameters['property'] = $property;
-	    
+
 	    $this->service->is_api = true;
-	    
+
 	    $this->service->boot();
-	    
-        return response($this->service)->header('Access-Control-Allow-Origin', '*');
+
+        return response($this->service->toArray())->header('Access-Control-Allow-Origin', '*');
+    }
+
+
+
+    public function store(){
+	    $request = request();
+	    $created = $this->model::create($request->all());
+
+	    return $created;
+// 	    dd($this->model);
     }
 
 }
