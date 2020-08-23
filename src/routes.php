@@ -74,14 +74,24 @@ Route::prefix(config('g3n1us_model_api.uri_prefix', 'api'))->group(function() {
         ]);
     })->name('rest.index');
 
+
+
     foreach($route_names as $route_name){
         [$url, $slug, $model, $name] = $route_name;
 
         Route::prefix($slug)->group(function() use($url, $slug, $model, $name){
             Route::get("/{id?}/{property?}", 'G3n1us\\ModelApi\\ModelAPIController@route')->name($name);
 
-            if($slug === $model::rest_plural()){
+            Route::delete("/{id}", 'G3n1us\\ModelApi\\ModelAPIController@destroy')->name("rest.$slug.destroy");
+
+            Route::put("/{id}", 'G3n1us\\ModelApi\\ModelAPIController@update')->name("rest.$slug.update");
+
+            Route::post("/", 'G3n1us\\ModelApi\\ModelAPIController@store')->name("rest.$slug.store");
+
+// 			Route::resource('/', 'G3n1us\\ModelApi\\ModelAPIController');
+            // if($slug === $model::rest_plural()){
                 // set other methods
+/*
                 Route::resource('/', 'G3n1us\\ModelApi\\ModelAPIController')->only([
                     'store', 'update', 'destroy',
                 ])->names([
@@ -89,15 +99,16 @@ Route::prefix(config('g3n1us_model_api.uri_prefix', 'api'))->group(function() {
                     'update' => "rest.$slug.update",
                     'destroy' => "rest.$slug.destroy",
                 ]);
+*/
 
-            }
+            // }
         });
 
     }
 
 
     if(!empty($model_regex)){
-    	Route::get('/{modelname}/{id?}/{property?}', 'G3n1us\\ModelApi\\ModelAPIController@redirect')->where('modelname', $model_regex);
+    	// Route::get('/{modelname}/{id?}/{property?}', 'G3n1us\\ModelApi\\ModelAPIController@redirect')->where('modelname', $model_regex);
     }
 
 });

@@ -42,8 +42,10 @@ class ModelAPIController extends BaseController{
 
     public function __construct(ApiService $service){
 		$this->service = $service;
-		$this->modelname = basename(Route::current()->getPrefix());
-        $this->service->parameters['modelname'] = $this->modelname;
+		if($current_route = Route::current()){
+    		$this->modelname = basename($current_route->getPrefix());
+            $this->service->parameters['modelname'] = $this->modelname;
+		}
         $this->model = $this->findModel();
     }
 
@@ -57,7 +59,6 @@ class ModelAPIController extends BaseController{
 
 
     public function route($id = null, $property = null){
-        $this->findModel();
         $this->service->parameters['id'] = $id;
 
         $this->service->parameters['property'] = $property;
@@ -74,10 +75,26 @@ class ModelAPIController extends BaseController{
     public function store(){
 	    $request = request();
 	    $created = $this->model::create($request->all());
-
 	    return $created;
-// 	    dd($this->model);
     }
+
+
+    public function destroy($id){
+        $this->service->parameters['id'] = $id;
+	    $this->service->is_api = true;
+	    return $this->service->findOrFail()->delete();
+    }
+
+
+    public function update($id){
+        $this->service->parameters['id'] = $id;
+	    $this->service->is_api = true;
+
+	    $updated = $this->service->findOrFail()->update(request()->all());
+	    return $updated;
+    }
+
+
 
 }
 

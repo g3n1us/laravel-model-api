@@ -25,6 +25,7 @@ class ApiService{
     protected $connection = 'default';
 
     protected $eloquent_builder = false;
+    protected $booted = false;
 
     // ordering
     protected $order_direction = 'asc';
@@ -46,10 +47,12 @@ class ApiService{
 
 
     public function boot(){
-		app()->make(AccessRest::class);
-		if(!$this->is_api){
-			app()->make(AccessDeclarative::class);
-		}
+	    if(!$this->booted){
+			app()->make(AccessRest::class);
+			if(!$this->is_api){
+				app()->make(AccessDeclarative::class);
+			}
+	    }
 
 		$this->booted = true;
 
@@ -194,6 +197,17 @@ class ApiService{
 		}
     }
 
+
+    public function findOrFail(){
+	    $this->boot();
+	    $this->resolve();
+
+		[ 'id' => $id ] = $this->parameters;
+
+	    return $this->eloquent_builder->findOrFail($id);
+    }
+
+
     public function toArray(){
 //         dd($this->get());
         return $this->get();
@@ -259,15 +273,12 @@ class ApiService{
         if(empty($out)){
 	        return null;
         }
-// 	    dd($out, $arg, $this->{$arg});
+
         $out = array_map(function($v) use($out, $separator){
 	        if(!is_string($v)) return $v;
             return array_map('trim', explode($separator, $v));
         }, $out);
 
-//         dump($arg, $out);
-
-//         $out = Arr::flatten($out);
         return $out;
     }
 
